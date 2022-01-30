@@ -9,11 +9,6 @@
 
 -- Starter settings --
 
-madrute = false
-tagetmad = false
-bil = false
-madafleveret = false
-
 Citizen.CreateThread(function()
     while true do
        Citizen.Wait(1)
@@ -22,17 +17,18 @@ Citizen.CreateThread(function()
         if GetDistanceBetweenCoords(GetEntityCoords(GetPlayerPed(-1)), v[1], v[2], v[3]) < 2 then
             DrawText3Ds(v[1], v[2], v[3]+0.15, "~r~[E]~w~ - Start madrute")
             if IsControlJustPressed(1, 38) then
-              exports['mythic_notify']:DoHudText('inform', 'Du har nu startet en madrute! Tag hen og hent maden på venstre side!', { ['g'] = '#ffffff', ['w'] = '#000000' })
-              Citizen.Wait(1000)
-              madrute = true
+                if not alleredeigang then
+                    exports['mythic_notify']:DoHudText('inform', 'Du har nu startet en madrute! Tag hen og hent maden på venstre side!', { ['g'] = '#ffffff', ['w'] = '#000000' })
+                    Citizen.Wait(1000)
+                    madrute = true
+                    alleredeigang = true
+                else
+                    exports['mythic_notify']:DoHudText('inform', 'Du er alerede igang med en rute', { ['g'] = '#ffffff', ['w'] = '#000000' })
+                end
             end
           end
        end
     end
-end)
-
-RegisterCommand("arnieergangsta", function()
-    TaskStartScenarioInPlace(PlayerPedId(), "WORLD_HUMAN_VALET", 0, true)
 end)
 
 
@@ -41,8 +37,8 @@ Citizen.CreateThread(function()
         Citizen.Wait(1)
         for k,v in pairs(cfg.Hentmad) do
             if GetDistanceBetweenCoords(GetEntityCoords(GetPlayerPed(-1)), v[1], v[2], v[3]) < 2 then
-                    if madrute == true then
-                        if tagetmad == false then
+                    if madrute then
+                        if not tagetmad then
                     DrawText3Ds(v[1], v[2], v[3]+0.15, "~r~[E]~w~ - Tag maden")
                     if IsControlJustPressed(1, 38) then
                     Citizen.Wait(200)
@@ -66,23 +62,18 @@ Citizen.CreateThread(function()
 
     RegisterNetEvent('SpawnBil')
     AddEventHandler('SpawnBil',function()
-      local spawncar = true
-      local lockpick = true
       local vehiclehash = GetHashKey("Rhapsody")
       RequestModel(vehiclehash)
       while not HasModelLoaded(vehiclehash) do
           RequestModel(vehiclehash)
           Citizen.Wait(1)
       end
-      local coords = GetOffsetFromEntityInWorldCoords(GetPlayerPed(1), 0, 10.0, 0)
       local spawned_car = CreateVehicle(vehiclehash,154.22692871094,-1482.0850830078,28.832084655762, true, false)
       SetEntityAsMissionEntity(spawned_car, true, true)
-      spawncar = true
     end)
 
     RegisterNetEvent('Aflever:maden')
     AddEventHandler('Aflever:maden', function()
-        local player = GetPlayerPed(-1)
         num = math.random(1,20) 
         SetNewWaypoint(cfg.Afleveremaden[num].x, cfg.Afleveremaden[num].y, cfg.Afleveremaden[num].z)
     end)
@@ -90,17 +81,13 @@ Citizen.CreateThread(function()
                             Citizen.CreateThread(function()
                             while true do
                                 Citizen.Wait(-1)
-                                if tagetmad == true then
+                                if tagetmad then
                                     if GetDistanceBetweenCoords(GetEntityCoords(GetPlayerPed(-1)), cfg.Afleveremaden[num].x, cfg.Afleveremaden[num].y, cfg.Afleveremaden[num].z) < 2 then
                                         DrawText3Ds(cfg.Afleveremaden[num].x, cfg.Afleveremaden[num].y, cfg.Afleveremaden[num].z+0.10, "~r~[E]~w~ Aflever maden")
                                         if IsControlJustPressed(1, 38) then
                                             exports['progressBars']:startUI(3000, "Afleverer maden...")
                                             TaskStartScenarioInPlace(PlayerPedId(), "WORLD_HUMAN_WINDOW_SHOP_BROWSE", 0, true)
                                             Citizen.Wait(3000)
-                                            local ped = PlayerPedId()
-                                            local x,y,z = table.unpack(GetEntityCoords(ped, false))
-                                            local streetName, crossing = GetStreetNameAtCoord(x, y, z)
-                                            streetName = GetStreetNameFromHashKey(streetName)
                                             ClearPedTasksImmediately(GetPlayerPed(-1))
                                             TriggerServerEvent('Betaling')
                                             Citizen.Wait(1)
@@ -108,8 +95,11 @@ Citizen.CreateThread(function()
                                             Citizen.Wait(1000)
                                             tagetmad = false
                                             madafleveret = true
+                                            alleredeigang = false
                                         end
                                     end
+                                else
+                                    Citizen.Wait(5000)
                                 end
                             end
                         end)
